@@ -1,4 +1,4 @@
-import { Copy, Crown, Play, Volume2, VolumeX } from "lucide-react";
+import { Copy, Crown, EyeOff, Play, Volume2, VolumeX, WifiOff } from "lucide-react";
 import { MAX_PLAYERS } from "../../shared/game-rules";
 import type { GameParams, RoomState } from "../../shared/protocol";
 import type { Song } from "../../shared/song";
@@ -80,12 +80,27 @@ export function LobbyScreen(props: Props) {
         <h2 className="mb-2 text-body font-medium">{vi.lobby.players(room.players.length, MAX_PLAYERS)}</h2>
         <ul className="flex flex-col gap-2" aria-live="polite">
           {room.players.map((p) => (
-            <li key={p.id} className="flex animate-pop items-center gap-3 rounded-button bg-surface px-4 py-2 shadow-card">
+            <li
+              key={p.id}
+              className={`flex animate-pop items-center gap-3 rounded-button bg-surface px-4 py-2 shadow-card ${p.connected ? "" : "opacity-60"}`}
+            >
               <Avatar id={p.avatarId} size={48} />
-              <span className="min-w-0 flex-1 truncate text-body font-medium">
-                {p.name}
-                {p.id === meId ? ` (${vi.lobby.you})` : ""}
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate text-body font-medium">
+                  {p.name}
+                  {p.id === meId ? ` (${vi.lobby.you})` : ""}
+                </span>
+                {!p.connected ? (
+                  <span className="truncate text-small text-danger">{vi.lobby.offline}</span>
+                ) : !p.focused ? (
+                  <span className="truncate text-small text-text-muted">{vi.lobby.away}</span>
+                ) : null}
               </span>
+              {!p.connected ? (
+                <WifiOff size={24} strokeWidth={2.25} className="text-danger" aria-label={vi.lobby.offline} />
+              ) : !p.focused ? (
+                <EyeOff size={24} strokeWidth={2.25} className="text-text-muted" aria-label={vi.lobby.away} />
+              ) : null}
               {p.id === room.hostId ? (
                 <Crown size={24} strokeWidth={2.25} className="text-cta" aria-label={vi.lobby.host} />
               ) : null}

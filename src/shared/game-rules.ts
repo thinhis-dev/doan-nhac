@@ -10,6 +10,8 @@ export const TEXT_MAX = 200;
 export const PREVIEW_SECONDS = 30;
 export const AVATAR_COUNT = 12;
 export const MAX_ROOMS = 200;
+/** How long the server holds the seat of a disconnected player for a rejoin. */
+export const RECONNECT_GRACE_MS = 60_000;
 export const ALLOWED_PREVIEW_HOST = "audio-ssl.itunes.apple.com";
 
 export const CORRECT_BASE = 500;

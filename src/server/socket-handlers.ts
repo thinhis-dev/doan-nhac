@@ -1,8 +1,9 @@
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { NAME_MAX, POOL_MAX, POOL_MIN, TEXT_MAX } from "../shared/game-rules";
+import { NAME_MAX, POOL_MAX, POOL_MIN, RECONNECT_GRACE_MS, TEXT_MAX } from "../shared/game-rules";
 import type { Ack, ErrorCode, GameParams, PoolSong } from "../shared/protocol";
 import type { GameIo } from "./app";
-import { type EngineClock, type EngineTiming, GameEngine, realClock } from "./game-engine";
+import { type EngineClock, type EngineTiming, GameEngine, realClock, type TimerHandle } from "./game-engine";
 import { isApplePreviewUrl, refreshPreviews } from "./preview-refresh";
 import { pickSongs, poolHasEnoughTitles, type Rng } from "./question-builder";
 import { type Room, RoomStore, toRoomState } from "./room-store";
@@ -24,6 +25,7 @@ const poolSongSchema = z.object({
 const schemas = {
   create: z.object({ name: z.string().max(NAME_MAX * 8), mode: z.enum(["solo", "party"]) }),
   join: z.object({ code: z.string().max(16), name: z.string().max(NAME_MAX * 8) }),
+  resume: z.object({ token: z.string().min(1).max(64) }),
   params: z.object({ params: paramsSchema }),
   audio: z.object({ ready: z.boolean() }),
   focus: z.object({ focused: z.boolean() }),
@@ -37,8 +39,12 @@ export type HandlerDeps = {
   clock?: EngineClock;
   rng?: Rng;
   timing?: EngineTiming;
+  /** How long a disconnected player keeps the seat. */
+  graceMs?: number;
   refresh?: (songs: PoolSong[]) => Promise<PoolSong[]>;
 };
+
+type GameSocket = Parameters<Parameters<GameIo["on"]>[1]>[0];
 
 type AnyAck = (res: Ack<Record<string, unknown>>) => void;
 
@@ -55,8 +61,14 @@ export function registerSocketHandlers(io: GameIo, deps: HandlerDeps = {}) {
   const clock = deps.clock ?? realClock;
   const rng = deps.rng ?? Math.random;
   const refresh = deps.refresh ?? ((songs: PoolSong[]) => refreshPreviews(songs));
+  const graceMs = deps.graceMs ?? RECONNECT_GRACE_MS;
   const engines = new Map<string, GameEngine>();
   const starting = new Set<string>();
+  // A player id is not the socket id: a rejoin moves the player to a new socket.
+  const playerByToken = new Map<string, string>();
+  const tokenByPlayer = new Map<string, string>();
+  const socketByPlayer = new Map<string, GameSocket>();
+  const graceTimers = new Map<string, TimerHandle>();
 
   const broadcast = (room: Room) => io.to(room.code).emit("room:state", toRoomState(room));
 
@@ -80,22 +92,54 @@ export function registerSocketHandlers(io: GameIo, deps: HandlerDeps = {}) {
     return engine;
   };
 
-  io.on("connection", (socket) => {
-    const playerId = socket.id;
+  const issueToken = (playerId: string): string => {
+    const token = randomUUID();
+    playerByToken.set(token, playerId);
+    tokenByPlayer.set(playerId, token);
+    return token;
+  };
 
-    const leaveCurrent = () => {
-      const res = store.leave(playerId);
-      if (!res) return;
-      void socket.leave(res.room.code);
-      const engine = engines.get(res.room.code);
-      if (res.deleted) {
-        engine?.stop();
-        engines.delete(res.room.code);
-        starting.delete(res.room.code);
-        return;
-      }
+  const cancelGrace = (playerId: string) => {
+    const timer = graceTimers.get(playerId);
+    if (timer !== undefined) clock.clearTimer(timer);
+    graceTimers.delete(playerId);
+  };
+
+  /** Removes a player from the room for good. Returns the room code, if any. */
+  const removePlayer = (playerId: string): string | undefined => {
+    cancelGrace(playerId);
+    const token = tokenByPlayer.get(playerId);
+    if (token) playerByToken.delete(token);
+    tokenByPlayer.delete(playerId);
+    const res = store.leave(playerId);
+    if (!res) return undefined;
+    const engine = engines.get(res.room.code);
+    if (res.deleted) {
+      engine?.stop();
+      engines.delete(res.room.code);
+      starting.delete(res.room.code);
+    } else {
       engine?.playerLeft(playerId);
       broadcast(res.room);
+    }
+    return res.room.code;
+  };
+
+  const setConnected = (room: Room, playerId: string, connected: boolean) => {
+    const engine = engines.get(room.code);
+    if (engine) return engine.setConnected(playerId, connected);
+    const player = room.players.find((p) => p.id === playerId);
+    if (player) player.connected = connected;
+    broadcast(room);
+  };
+
+  io.on("connection", (socket) => {
+    let playerId: string = randomUUID();
+    socketByPlayer.set(playerId, socket);
+
+    const leaveCurrent = () => {
+      const code = removePlayer(playerId);
+      if (code) void socket.leave(code);
     };
 
     const hostRoom = (ack: AnyAck): Room | undefined => {
@@ -113,7 +157,7 @@ export function registerSocketHandlers(io: GameIo, deps: HandlerDeps = {}) {
       const res = store.create(parsed.data.mode, playerId, parsed.data.name);
       if (!res.ok) return fail(ack, res.error);
       void socket.join(res.value.code);
-      ack({ ok: true, code: res.value.code, playerId });
+      ack({ ok: true, code: res.value.code, playerId, token: issueToken(playerId) });
       broadcast(res.value);
     });
 
@@ -130,8 +174,38 @@ export function registerSocketHandlers(io: GameIo, deps: HandlerDeps = {}) {
       const res = store.join(code, playerId, parsed.data.name);
       if (!res.ok) return fail(ack, res.error);
       void socket.join(res.value.code);
-      ack({ ok: true, playerId });
+      ack({ ok: true, playerId, token: issueToken(playerId) });
       broadcast(res.value);
+    });
+
+    socket.on("room:resume", (payload, rawAck) => {
+      const ack = safeAck(rawAck);
+      const parsed = schemas.resume.safeParse(payload);
+      if (!parsed.success) return fail(ack, "BAD_PAYLOAD");
+      const id = playerByToken.get(parsed.data.token);
+      const room = id ? store.roomOf(id) : undefined;
+      const player = room?.players.find((p) => p.id === id);
+      if (!id || !room || !player) return fail(ack, "ROOM_NOT_FOUND");
+      if (id !== playerId) {
+        leaveCurrent();
+        if (socketByPlayer.get(playerId) === socket) socketByPlayer.delete(playerId);
+        playerId = id;
+      }
+      // The old socket can still look alive until its heartbeat times out. The new one wins.
+      const old = socketByPlayer.get(id);
+      socketByPlayer.set(id, socket);
+      if (old && old !== socket) old.disconnect(true);
+      cancelGrace(id);
+      void socket.join(room.code);
+      // The page reports sound and focus again: a reload loses both.
+      player.audioReady = false;
+      player.focused = true;
+      ack({ ok: true, playerId: id, code: room.code, mode: room.mode });
+      setConnected(room, id, true);
+      const caughtUp = engines.get(room.code)?.current() ?? {};
+      if (caughtUp.question) socket.emit("game:question", caughtUp.question);
+      if (caughtUp.reveal) socket.emit("game:reveal", caughtUp.reveal);
+      if (caughtUp.over) socket.emit("game:over", caughtUp.over);
     });
 
     socket.on("room:leave", (_payload, rawAck) => {
@@ -224,7 +298,22 @@ export function registerSocketHandlers(io: GameIo, deps: HandlerDeps = {}) {
       rawAck({ serverTime: clock.now() });
     });
 
-    socket.on("disconnect", leaveCurrent);
+    socket.on("disconnect", () => {
+      // A rejoin already moved this player to another socket.
+      if (socketByPlayer.get(playerId) !== socket) return;
+      socketByPlayer.delete(playerId);
+      const room = store.roomOf(playerId);
+      if (!room) return;
+      const id = playerId;
+      setConnected(room, id, false);
+      graceTimers.set(
+        id,
+        clock.setTimer(() => {
+          graceTimers.delete(id);
+          removePlayer(id);
+        }, graceMs),
+      );
+    });
   });
 
   return { store, engines };

@@ -118,6 +118,7 @@ export class RoomStore {
       audioReady: false,
       focused: true,
       answered: false,
+      connected: true,
     };
     room.players.push(player);
     this.roomByPlayer.set(playerId, room.code);

@@ -195,4 +195,33 @@ describe("GameEngine", () => {
     clock.advance(20_000);
     expect(log.over?.ranking.map((p) => p.id)).toEqual(["p1", "p0"]);
   });
+
+  it("skips an offline player for an early reveal, but waits the timer with nobody online", () => {
+    const { engine, clock, log, params, room } = ctx;
+    engine.start(params, pool.slice(0, 2), pool);
+    clock.advance(3000);
+    engine.setConnected("p1", false);
+    expect(room.players[1]?.connected).toBe(false);
+    const right = correct(log, 0) ?? 0;
+    engine.answer("p0", 0, right);
+    expect(room.phase).toBe("reveal");
+
+    clock.advance(4000 + 3000);
+    expect(room.phase).toBe("playing");
+    engine.setConnected("p0", false);
+    expect(room.phase).toBe("playing");
+    clock.advance(10_000);
+    expect(room.phase).toBe("reveal");
+  });
+
+  it("gives a rejoining player the payloads of the current phase", () => {
+    const { engine, clock, log, params } = ctx;
+    expect(engine.current()).toEqual({});
+    engine.start(params, pool.slice(0, 1), pool);
+    expect(engine.current()).toEqual({ question: log.questions[0] });
+    clock.advance(3000 + 10_000);
+    expect(engine.current()).toEqual({ question: log.questions[0], reveal: log.reveals[0] });
+    clock.advance(4000);
+    expect(engine.current()).toEqual({ over: log.over });
+  });
 });
