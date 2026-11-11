@@ -1,6 +1,6 @@
 ---
 title: "Phase 1: Project scaffold and contracts"
-status: todo
+status: done
 priority: P1
 effort: 3h
 dependencies: []
@@ -14,10 +14,10 @@ Create the repository, the build pipeline, and the shared TypeScript contracts. 
 
 ## Requirements
 
-- [ ] One npm package in `/home/bim-dev/projects/doan-nhac` with client, server and shared code.
-- [ ] `npm run dev` starts the client and the server together.
-- [ ] `npm run build` produces one deployable output. `npm start` serves it.
-- [ ] The shared module defines all socket events, the game parameters and the song row.
+- [x] One npm package in `/home/bim-dev/projects/doan-nhac` with client, server and shared code.
+- [x] `npm run dev` starts the client and the server together.
+- [x] `npm run build` produces one deployable output. `npm start` serves it.
+- [x] The shared module defines all socket events, the game parameters and the song row.
 
 ## Files
 
@@ -136,10 +136,10 @@ export function scoreAnswer(correct: boolean, elapsedMs: number, totalMs: number
 
 ## Todo
 
-- [ ] Repository and tooling
-- [ ] Shared contracts
-- [ ] `scoreAnswer` with tests
-- [ ] Minimal server and client connect to each other
+- [x] Repository and tooling
+- [x] Shared contracts
+- [x] `scoreAnswer` with tests
+- [x] Minimal server and client connect to each other
 
 ## Success Criteria
 

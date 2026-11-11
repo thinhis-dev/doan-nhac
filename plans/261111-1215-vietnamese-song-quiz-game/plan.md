@@ -1,7 +1,7 @@
 ---
 title: "Vietnamese song quiz game (solo and party)"
 description: "A browser quiz for Vietnamese music. Players hear an iTunes preview and pick the title or the artist."
-status: pending
+status: in-progress
 priority: P1
 effort: 29h
 tags: [feature, frontend, backend, experimental]
@@ -111,7 +111,7 @@ Rules:
 
 | # | Phase | Effort | Depends on | Status |
 |---|-------|--------|-----------|--------|
-| 1 | [Project scaffold and contracts](./phase-01-project-scaffold-and-contracts.md) | 3h | none | Pending |
+| 1 | [Project scaffold and contracts](./phase-01-project-scaffold-and-contracts.md) | 3h | none | Done |
 | 2 | [Song library and game server](./phase-02-song-library-and-game-server.md) | 6h | 1 | Pending |
 | 3 | [Client shell and audio](./phase-03-client-shell-and-audio.md) | 5h | 1 | Pending |
 | 4 | [Game screens: solo and party](./phase-04-game-screens-solo-and-party.md) | 7h | 2, 3 | Pending |
