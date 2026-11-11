@@ -140,6 +140,16 @@ export function isHost(state: GameState): boolean {
   return !!state.room && state.room.hostId === state.playerId;
 }
 
+/**
+ * Sound is confirmed once per session, but the server makes a new, not-ready player on
+ * every create or join. True when this player must report readiness to the server.
+ */
+export function audioReportNeeded(state: GameState): boolean {
+  if (state.room?.mode !== "party" || !state.audioConfirmed) return false;
+  const me = state.room.players.find((p) => p.id === state.playerId);
+  return me?.audioReady === false;
+}
+
 /** A game runs from the first countdown to the last reveal. */
 export function gameActive(state: GameState): boolean {
   const phase = state.room?.phase;

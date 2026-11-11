@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_PARAMS, type QuestionPayload, type RoomPhase, type RoomState } from "../../shared/protocol";
-import { type GameAction, type GameState, gameActive, gameReducer, initialGameState, isHost } from "./game-store";
+import {
+  audioReportNeeded,
+  type GameAction,
+  type GameState,
+  gameActive,
+  gameReducer,
+  initialGameState,
+  isHost,
+} from "./game-store";
 
 const room = (phase: RoomPhase, mode: "solo" | "party" = "party"): RoomState => ({
   code: "ABCD",
@@ -118,5 +126,38 @@ describe("gameReducer", () => {
 
   it("does not show lost outside a room", () => {
     expect(run([{ type: "disconnected" }]).screen).toBe("home");
+  });
+});
+
+describe("audioReportNeeded", () => {
+  const notReady = (mode: "solo" | "party" = "party"): RoomState => {
+    const r = room("lobby", mode);
+    return { ...r, players: r.players.map((p) => ({ ...p, audioReady: false })) };
+  };
+
+  it("a player who leaves and joins again skips the gate but still reports readiness", () => {
+    let s = run([
+      { type: "joined", playerId: "me", mode: "party" },
+      { type: "room-state", room: notReady() },
+      { type: "audio-confirmed" },
+    ]);
+    expect(audioReportNeeded(s)).toBe(true);
+    s = run([{ type: "room-state", room: room("lobby") }], s);
+    expect(audioReportNeeded(s)).toBe(false);
+
+    s = run([{ type: "left" }, { type: "joined", playerId: "me", mode: "party" }, { type: "room-state", room: notReady() }], s);
+    expect(s.screen).toBe("lobby");
+    expect(audioReportNeeded(s)).toBe(true);
+  });
+
+  it("does not report before the gate or in solo", () => {
+    const beforeGate = run([{ type: "joined", playerId: "me", mode: "party" }, { type: "room-state", room: notReady() }]);
+    expect(audioReportNeeded(beforeGate)).toBe(false);
+    const solo = run([
+      { type: "audio-confirmed" },
+      { type: "joined", playerId: "me", mode: "solo" },
+      { type: "room-state", room: notReady("solo") },
+    ]);
+    expect(audioReportNeeded(solo)).toBe(false);
   });
 });
