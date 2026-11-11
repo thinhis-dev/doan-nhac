@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type ItunesTrack, parseArtistsCsv, selectArtistSongs } from "./fetch-songs";
+import { type ItunesTrack, parseArtistsCsv, parseWantedCsv, selectArtistSongs, selectWantedSong } from "./fetch-songs";
 
 const track = (over: Partial<ItunesTrack>): ItunesTrack => ({
   kind: "song",
@@ -94,6 +94,43 @@ describe("parseArtistsCsv", () => {
     expect(parseArtistsCsv("﻿artist,tags\nĐen,Rap\nMỹ Tâm,V-pop;Ballad\n")).toEqual([
       { artist: "Đen", tags: ["Rap"] },
       { artist: "Mỹ Tâm", tags: ["V-pop", "Ballad"] },
+    ]);
+  });
+});
+
+describe("selectWantedSong", () => {
+  const wanted = { title: "Đồi Thông Hai Mộ", artist: "Lệ Quyên ft. Quang Lê", tags: ["Bolero"] };
+
+  it("prefers the named singer with the same title", () => {
+    const out = selectWantedSong(
+      [
+        track({ trackId: 1, trackName: "Đồi Thông Hai Mộ", artistName: "Ca sĩ khác" }),
+        track({ trackId: 2, trackName: "Đồi thông hai mộ", artistName: "Quang Lê" }),
+      ],
+      wanted,
+    );
+    expect(out).toMatchObject({ trackId: 2, tags: ["Bolero"], enabled: true });
+  });
+
+  it("falls back to another singer and skips karaoke and other titles", () => {
+    const out = selectWantedSong(
+      [
+        track({ trackId: 1, trackName: "Đồi Thông Hai Mộ (Karaoke)", artistName: "Lệ Quyên" }),
+        track({ trackId: 2, trackName: "Hai Mộ", artistName: "Lệ Quyên" }),
+        track({ trackId: 3, trackName: "Đồi Thông Hai Mộ", artistName: "Ca sĩ khác" }),
+      ],
+      wanted,
+    );
+    expect(out?.trackId).toBe(3);
+  });
+
+  it("returns null without a matching title", () => {
+    expect(selectWantedSong([track({ trackName: "Khác" })], wanted)).toBeNull();
+  });
+
+  it("parses the wanted list", () => {
+    expect(parseWantedCsv("title,artist,tags\nGiã Từ,Đàm Vĩnh Hưng,Bolero\n")).toEqual([
+      { title: "Giã Từ", artist: "Đàm Vĩnh Hưng", tags: ["Bolero"] },
     ]);
   });
 });
