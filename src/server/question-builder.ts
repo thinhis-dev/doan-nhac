@@ -1,6 +1,6 @@
 import { PREVIEW_SECONDS } from "../shared/game-rules";
 import type { GameParams, PoolSong, QuestionKind } from "../shared/protocol";
-import { normalizeText } from "../shared/song";
+import { displayText, normalizeText } from "../shared/song";
 
 export type Rng = () => number;
 
@@ -62,8 +62,8 @@ export function buildQuestion(song: PoolSong, pool: PoolSong[], params: GamePara
   const artistAllowed = poolAllowsArtistKind(pool);
   const kind: QuestionKind = artistAllowed && rng() < 0.5 ? "artist" : "title";
   const field = kind === "title" ? "title" : "artist";
-  const correct = song[field];
-  const others = pool.filter((s) => s.trackId !== song.trackId).map((s) => s[field]);
+  const correct = displayText(song[field]);
+  const others = pool.filter((s) => s.trackId !== song.trackId).map((s) => displayText(s[field]));
   const wrong = pickChoices(correct, others, rng);
   const choices = shuffle([correct, ...wrong], rng);
   return {

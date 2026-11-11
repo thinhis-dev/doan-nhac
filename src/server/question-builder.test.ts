@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_PARAMS, type PoolSong } from "../shared/protocol";
-import { normalizeText } from "../shared/song";
+import { displayText, normalizeText } from "../shared/song";
 import { buildQuestion, pickSongs, poolHasEnoughTitles, shuffle } from "./question-builder";
 
 // mulberry32: a small seeded generator with well-spread first values.
@@ -46,7 +46,7 @@ describe("question builder", () => {
       const q = buildQuestion(target, pool, DEFAULT_PARAMS, rng);
       expect(q.choices).toHaveLength(4);
       expect(new Set(q.choices.map(normalizeText)).size).toBe(4);
-      expect(q.choices[q.correctIndex]).toBe(q.kind === "title" ? target.title : target.artist);
+      expect(q.choices[q.correctIndex]).toBe(displayText(q.kind === "title" ? target.title : target.artist));
     }
   });
 
@@ -70,6 +70,15 @@ describe("question builder", () => {
     expect(Math.min(...offsets)).toBe(0);
     expect(Math.max(...offsets)).toBe(10);
     expect([...offsets].every(Number.isInteger)).toBe(true);
+  });
+
+  it("shows choices without bracketed extras", () => {
+    const withFeat = [song(1, "Hẹn yêu (feat. Ai đó)", "Đen"), ...pool.slice(2)];
+    for (let seed = 1; seed < 30; seed++) {
+      const q = buildQuestion(withFeat[0] as PoolSong, withFeat, DEFAULT_PARAMS, seeded(seed));
+      if (q.kind === "title") expect(q.choices[q.correctIndex]).toBe("Hẹn yêu");
+      expect(q.choices.every((c) => !c.includes("("))).toBe(true);
+    }
   });
 
   it("requires 4 distinct titles", () => {

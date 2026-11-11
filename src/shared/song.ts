@@ -36,6 +36,18 @@ export function decadeFromYear(year: number | null): string {
 }
 
 /**
+ * Text for an answer choice: removes bracketed extras such as "(feat. ...)"
+ * or "[From ...]". Keeps the original when nothing else is left.
+ */
+export function displayText(text: string): string {
+  const stripped = text
+    .replace(/\([^)]*\)|\[[^\]]*\]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return stripped.length > 0 ? stripped : text.trim();
+}
+
+/**
  * Normalizes text for comparison: removes text in brackets, diacritics
  * (including "đ"), case, punctuation and extra spaces.
  */

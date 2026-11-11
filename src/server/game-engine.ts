@@ -9,6 +9,7 @@ import type {
 } from "../shared/protocol";
 import { type BuiltQuestion, buildQuestion, type Rng } from "./question-builder";
 import type { Room } from "./room-store";
+import { displayText } from "../shared/song";
 
 export type TimerHandle = unknown;
 
@@ -180,8 +181,8 @@ export class GameEngine {
     this.events.reveal({
       index: this.index,
       correctIndex: q.correctIndex,
-      title: q.song.title,
-      artist: q.song.artist,
+      title: displayText(q.song.title),
+      artist: displayText(q.song.artist),
       results,
     });
     this.schedule(() => this.nextQuestion(), this.clock.now() + this.timing.revealMs);
