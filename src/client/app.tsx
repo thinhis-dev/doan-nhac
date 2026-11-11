@@ -1,22 +1,39 @@
 import { useEffect, useState } from "react";
-import { io } from "socket.io-client";
+import { AudioGate } from "./components/audio-gate";
+import { ToastProvider } from "./components/toast";
+import { getSocket } from "./lib/socket";
+import { HomeScreen } from "./screens/home-screen";
+
+type Screen = "home" | "gate";
 
 export function App() {
-  const [connected, setConnected] = useState(false);
+  const [connected, setConnected] = useState(() => getSocket().connected);
+  const [screen, setScreen] = useState<Screen>("home");
 
   useEffect(() => {
-    const socket = io({ transports: ["websocket", "polling"] });
-    socket.on("connect", () => setConnected(true));
-    socket.on("disconnect", () => setConnected(false));
+    const socket = getSocket();
+    const on = () => setConnected(true);
+    const off = () => setConnected(false);
+    socket.on("connect", on);
+    socket.on("disconnect", off);
     return () => {
-      socket.close();
+      socket.off("connect", on);
+      socket.off("disconnect", off);
     };
   }, []);
 
   return (
-    <main>
-      <h1>Đoán Nhạc</h1>
-      <p>{connected ? "Đã kết nối" : "Đang đánh thức máy chủ..."}</p>
-    </main>
+    <ToastProvider>
+      {screen === "home" ? (
+        <HomeScreen
+          connected={connected}
+          onSolo={() => setScreen("gate")}
+          onParty={() => setScreen("gate")}
+          onLibrary={() => {}}
+        />
+      ) : (
+        <AudioGate onBack={() => setScreen("home")} onDone={() => setScreen("home")} />
+      )}
+    </ToastProvider>
   );
 }
