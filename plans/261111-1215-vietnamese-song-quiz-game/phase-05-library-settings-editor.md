@@ -1,6 +1,6 @@
 ---
 title: "Phase 5: Library editor"
-status: todo
+status: done
 priority: P2
 effort: 5h
 dependencies: [3]
@@ -14,11 +14,11 @@ Build the "Kho nhạc" screen. A player uses it to add songs, correct song data,
 
 ## Requirements
 
-- [ ] Browse and search the library on a phone with one hand.
-- [ ] Add a song from iTunes search with no manual typing of ids or URLs.
-- [ ] Edit title, artist, decade, tags and custom lists of a song.
-- [ ] Turn a song off without deleting it.
-- [ ] Import a CSV, export a CSV, and reset to the default library.
+- [x] Browse and search the library on a phone with one hand.
+- [x] Add a song from iTunes search with no manual typing of ids or URLs.
+- [x] Edit title, artist, decade, tags and custom lists of a song.
+- [x] Turn a song off without deleting it.
+- [x] Import a CSV, export a CSV, and reset to the default library.
 
 ## Storage model
 
@@ -96,12 +96,12 @@ Commit after each numbered step that leaves the tests green. Push to `origin mai
 
 ## Todo
 
-- [ ] Library store operations with tests
-- [ ] iTunes search client
-- [ ] List, search, filter chips, paging
-- [ ] Edit sheet and tag input
-- [ ] Add sheet
-- [ ] Import, export, reset
+- [x] Library store operations with tests
+- [x] iTunes search client
+- [x] List, search, filter chips, paging
+- [x] Edit sheet and tag input
+- [x] Add sheet
+- [x] Import, export, reset
 
 ## Success Criteria
 

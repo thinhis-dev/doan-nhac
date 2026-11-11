@@ -115,7 +115,7 @@ Rules:
 | 2 | [Song library and game server](./phase-02-song-library-and-game-server.md) | 6h | 1 | Done |
 | 3 | [Client shell and audio](./phase-03-client-shell-and-audio.md) | 5h | 1 | Done |
 | 4 | [Game screens: solo and party](./phase-04-game-screens-solo-and-party.md) | 7h | 2, 3 | Done |
-| 5 | [Library editor](./phase-05-library-settings-editor.md) | 5h | 3 | Pending |
+| 5 | [Library editor](./phase-05-library-settings-editor.md) | 5h | 3 | Done |
 | 6 | [Deploy and device test](./phase-06-deploy-and-device-test.md) | 3h | 4, 5 | Pending |
 
 Phases 2 and 3 touch different directories and can run at the same time. Phase 5 can run at the same time as phase 4.
