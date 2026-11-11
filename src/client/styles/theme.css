@@ -1,0 +1,154 @@
+@import "tailwindcss";
+
+@import "@fontsource/baloo-2/latin-700.css";
+@import "@fontsource/baloo-2/vietnamese-700.css";
+@import "@fontsource/baloo-2/latin-800.css";
+@import "@fontsource/baloo-2/vietnamese-800.css";
+@import "@fontsource/be-vietnam-pro/latin-400.css";
+@import "@fontsource/be-vietnam-pro/vietnamese-400.css";
+@import "@fontsource/be-vietnam-pro/latin-500.css";
+@import "@fontsource/be-vietnam-pro/vietnamese-500.css";
+@import "@fontsource/be-vietnam-pro/latin-600.css";
+@import "@fontsource/be-vietnam-pro/vietnamese-600.css";
+
+/* Design tokens. Components use these names only, never raw hex values. */
+@theme {
+  --color-*: initial;
+  --color-bg: #0f0f23;
+  --color-surface: #1e1c35;
+  --color-surface-2: #27273b;
+  --color-text: #f8fafc;
+  --color-text-muted: #94a3b8;
+  --color-ink: #0f0f23;
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-transparent: transparent;
+  --color-primary: #7c3aed;
+  --color-primary-edge: #5b21b6;
+  --color-outline: #a78bfa;
+  --color-cta: #fbbf24;
+  --color-cta-edge: #b45309;
+  --color-accent: #fb7185;
+  --color-success: #34d399;
+  --color-danger: #f87171;
+  --color-edge: rgb(0 0 0 / 0.35);
+  --color-scrim: rgb(0 0 0 / 0.6);
+
+  --font-display: "Baloo 2", system-ui, sans-serif;
+  --font-body: "Be Vietnam Pro", system-ui, sans-serif;
+
+  --text-display: 2.75rem;
+  --text-display--line-height: 1.25;
+  --text-h1: 2rem;
+  --text-h1--line-height: 1.25;
+  --text-h2: 1.5rem;
+  --text-h2--line-height: 1.25;
+  --text-button: 1.25rem;
+  --text-button--line-height: 1.25;
+  --text-body: 1rem;
+  --text-body--line-height: 1.5;
+  --text-small: 0.875rem;
+  --text-small--line-height: 1.4;
+
+  --radius-chip: 12px;
+  --radius-button: 20px;
+  --radius-sheet: 28px;
+
+  --shadow-button-cta: 0 6px 0 0 var(--color-cta-edge);
+  --shadow-button-primary: 0 6px 0 0 var(--color-primary-edge);
+  --shadow-button-pressed-cta: 0 2px 0 0 var(--color-cta-edge);
+  --shadow-button-pressed-primary: 0 2px 0 0 var(--color-primary-edge);
+  --shadow-card: 0 4px 0 0 var(--color-edge);
+
+  --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --animate-pop: pop 200ms var(--ease-pop);
+  --animate-enter: enter 250ms ease-out;
+  --animate-shake: shake 300ms ease-in-out;
+  --animate-spin: spin 0.8s linear infinite;
+  --animate-tick: tick 1s ease-out;
+
+  @keyframes pop {
+    0% { transform: scale(0.92); }
+    100% { transform: scale(1); }
+  }
+  @keyframes enter {
+    0% { opacity: 0; transform: translateY(12px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  @keyframes tick {
+    0% { opacity: 0; transform: scale(1.6); }
+    30% { opacity: 1; transform: scale(1); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+}
+
+/* z-index layers: 0 content, 10 sticky bars, 20 sheets, 30 dialogs, 40 toasts. */
+@utility z-sticky { z-index: 10; }
+@utility z-sheet { z-index: 20; }
+@utility z-dialog { z-index: 30; }
+@utility z-toast { z-index: 40; }
+
+@utility focus-ring {
+  &:focus-visible {
+    outline: 3px solid var(--color-outline);
+    outline-offset: 2px;
+  }
+}
+
+@layer base {
+  html {
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-body);
+    -webkit-tap-highlight-color: transparent;
+    color-scheme: dark;
+  }
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background: var(--color-bg);
+  }
+  button,
+  [role="button"],
+  input,
+  label {
+    touch-action: manipulation;
+  }
+  input,
+  textarea,
+  select {
+    font-size: max(1rem, 16px);
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-outline);
+    outline-offset: 2px;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-name: fade-only !important;
+    transition-property: opacity !important;
+  }
+  @keyframes fade-only {
+    from { opacity: 0.6; }
+    to { opacity: 1; }
+  }
+  .animate-spin {
+    animation-name: spin !important;
+  }
+}
