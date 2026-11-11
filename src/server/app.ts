@@ -4,6 +4,7 @@ import fastifyStatic from "@fastify/static";
 import Fastify, { type FastifyInstance } from "fastify";
 import { Server } from "socket.io";
 import type { ClientToServerEvents, ServerToClientEvents } from "../shared/protocol";
+import { type HandlerDeps, registerSocketHandlers } from "./socket-handlers";
 
 export type GameIo = Server<ClientToServerEvents, ServerToClientEvents>;
 
@@ -11,6 +12,7 @@ export type AppOptions = {
   /** Directory of the built client. Skipped when it does not exist. */
   clientDir?: string;
   logger?: boolean;
+  handlers?: HandlerDeps;
 };
 
 export async function createApp(options: AppOptions = {}): Promise<{ app: FastifyInstance; io: GameIo }> {
@@ -29,6 +31,8 @@ export async function createApp(options: AppOptions = {}): Promise<{ app: Fastif
     connectionStateRecovery: undefined,
     serveClient: false,
   });
+
+  registerSocketHandlers(io, options.handlers);
 
   app.addHook("onClose", async () => {
     await io.close();
