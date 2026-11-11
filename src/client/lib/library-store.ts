@@ -1,3 +1,4 @@
+import { useEffect, useSyncExternalStore } from "react";
 import { parseSongsCsv } from "../../shared/csv";
 import type { Song } from "../../shared/song";
 
@@ -100,3 +101,12 @@ function browserStorage(): StorageLike | null {
 }
 
 export const library = new LibraryStore(typeof window === "undefined" ? null : browserStorage(), (url) => fetch(url));
+
+/** Subscribes a component to the working library and starts the first load. */
+export function useLibrary(): LibrarySnapshot {
+  const snap = useSyncExternalStore(library.subscribe, library.getSnapshot);
+  useEffect(() => {
+    void library.load();
+  }, []);
+  return snap;
+}
