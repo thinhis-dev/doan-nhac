@@ -12,7 +12,7 @@
 @import "@fontsource/be-vietnam-pro/vietnamese-600.css";
 
 /* Design tokens. Components use these names only, never raw hex values. */
-@theme {
+@theme static {
   --color-*: initial;
   --color-bg: #0f0f23;
   --color-surface: #1e1c35;
@@ -33,6 +33,7 @@
   --color-danger: #f87171;
   --color-edge: rgb(0 0 0 / 0.35);
   --color-scrim: rgb(0 0 0 / 0.6);
+
 
   --font-display: "Baloo 2", system-ui, sans-serif;
   --font-body: "Be Vietnam Pro", system-ui, sans-serif;
@@ -105,6 +106,21 @@
 }
 
 @layer base {
+  :root {
+    /* Avatar body colors, one per avatar. */
+    --color-av-0: #a78bfa;
+    --color-av-1: #fbbf24;
+    --color-av-2: #34d399;
+    --color-av-3: #fb7185;
+    --color-av-4: #60a5fa;
+    --color-av-5: #f97316;
+    --color-av-6: #e879f9;
+    --color-av-7: #2dd4bf;
+    --color-av-8: #facc15;
+    --color-av-9: #f472b6;
+    --color-av-10: #93c5fd;
+    --color-av-11: #a3e635;
+  }
   html {
     background: var(--color-bg);
     color: var(--color-text);
