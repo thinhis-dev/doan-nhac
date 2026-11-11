@@ -8,7 +8,7 @@ import { ScreenFrame } from "./components/screen-frame";
 import { ToastProvider } from "./components/toast";
 import { type AudioState, sessionPlayer } from "./lib/audio-player";
 import { browserFocusEnv, watchFocus } from "./lib/focus-watch";
-import { gameActive, gameReducer, initialGameState, isHost } from "./lib/game-store";
+import { audioReportNeeded, gameActive, gameReducer, initialGameState, isHost } from "./lib/game-store";
 import { guardRoom } from "./lib/leave-guard";
 import { useLibrary } from "./lib/library-store";
 import { DEFAULT_SOURCE, filterSongs, poolIsPlayable, type SourceSelection, toPool } from "./lib/song-filter";
@@ -146,9 +146,13 @@ function Game() {
 
   const audioDone = useCallback(() => {
     dispatch({ type: "audio-confirmed" });
-    if (state.room) void request("player:audio", { ready: true });
-    else dispatch({ type: "navigate", screen: "solo-setup", mode: "solo" });
+    if (!state.room) dispatch({ type: "navigate", screen: "solo-setup", mode: "solo" });
   }, [state.room]);
+
+  const reportAudio = audioReportNeeded(state);
+  useEffect(() => {
+    if (reportAudio) void request("player:audio", { ready: true });
+  }, [reportAudio]);
 
   const start = async (soloName?: string) => {
     setStarting(true);
