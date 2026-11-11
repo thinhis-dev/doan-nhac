@@ -62,3 +62,16 @@ export function normalizeText(text: string): string {
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
 }
+
+/** Splits an artist credit such as "A, B & C" or "A feat. B" into names. */
+export function artistNames(artist: string): string[] {
+  return displayText(artist)
+    .split(/,|&|\bfeat\.?|\bft\.?|\bx\b/i)
+    .map((name) => name.trim())
+    .filter((name) => name.length > 0);
+}
+
+/** The first credited artist, normalized. Two credits of one main artist share it. */
+export function primaryArtistKey(artist: string): string {
+  return normalizeText(artistNames(artist)[0] ?? artist);
+}

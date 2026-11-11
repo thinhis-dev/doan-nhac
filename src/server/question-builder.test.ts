@@ -57,6 +57,19 @@ describe("question builder", () => {
     }
   });
 
+  it("treats featured credits of one main artist as one artist", () => {
+    const oneArtist = [
+      song(1, "A", "Đen"),
+      song(2, "B", "Đen & MIN"),
+      song(3, "C", "Đen, JustaTee"),
+      song(4, "D", "Đen feat. Kimmese"),
+      song(5, "E", "Đen x Lynk Lee"),
+    ];
+    for (let seed = 1; seed < 60; seed++) {
+      expect(buildQuestion(oneArtist[1] as PoolSong, oneArtist, DEFAULT_PARAMS, seeded(seed)).kind).toBe("title");
+    }
+  });
+
   it("uses both kinds with 4 or more distinct artists", () => {
     const kinds = new Set<string>();
     for (let seed = 1; seed < 50; seed++) kinds.add(buildQuestion(pool[0] as PoolSong, pool, DEFAULT_PARAMS, seeded(seed)).kind);

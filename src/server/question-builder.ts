@@ -1,6 +1,6 @@
 import { PREVIEW_SECONDS } from "../shared/game-rules";
 import type { GameParams, PoolSong, QuestionKind } from "../shared/protocol";
-import { displayText, normalizeText } from "../shared/song";
+import { displayText, normalizeText, primaryArtistKey } from "../shared/song";
 
 export type Rng = () => number;
 
@@ -36,8 +36,9 @@ export function poolHasEnoughTitles(pool: PoolSong[]): boolean {
   return distinctCount(pool.map((s) => s.title)) >= CHOICE_COUNT;
 }
 
+/** Artist questions need 4 different main artists, so that a featured credit is not a choice. */
 export function poolAllowsArtistKind(pool: PoolSong[]): boolean {
-  return distinctCount(pool.map((s) => s.artist)) >= CHOICE_COUNT;
+  return new Set(pool.map((s) => primaryArtistKey(s.artist))).size >= CHOICE_COUNT;
 }
 
 /** Picks the song order for a game: min(questionCount, pool size) songs with no repeat. */
@@ -45,11 +46,11 @@ export function pickSongs(pool: PoolSong[], questionCount: number, rng: Rng): Po
   return shuffle(pool, rng).slice(0, Math.min(questionCount, pool.length));
 }
 
-function pickChoices(correct: string, candidates: string[], rng: Rng): string[] {
-  const seen = new Set([normalizeText(correct)]);
+function pickChoices(correct: string, candidates: string[], rng: Rng, keyOf: (text: string) => string): string[] {
+  const seen = new Set([keyOf(correct)]);
   const wrong: string[] = [];
   for (const c of shuffle(candidates, rng)) {
-    const key = normalizeText(c);
+    const key = keyOf(c);
     if (seen.has(key)) continue;
     seen.add(key);
     wrong.push(c);
@@ -64,7 +65,7 @@ export function buildQuestion(song: PoolSong, pool: PoolSong[], params: GamePara
   const field = kind === "title" ? "title" : "artist";
   const correct = displayText(song[field]);
   const others = pool.filter((s) => s.trackId !== song.trackId).map((s) => displayText(s[field]));
-  const wrong = pickChoices(correct, others, rng);
+  const wrong = pickChoices(correct, others, rng, kind === "title" ? normalizeText : primaryArtistKey);
   const choices = shuffle([correct, ...wrong], rng);
   return {
     kind,
