@@ -21,6 +21,10 @@
 
 During development, Vite forwards `/socket.io` and `/healthz` to the server on port 3001. `GET /healthz` returns `ok`.
 
+## Logo and icons
+
+The logo source is `assets/logo.svg`. After you change it, run `./scripts/make-icons.sh` (needs `rsvg-convert` and ImageMagick). It writes `public/favicon.svg`, `public/favicon.ico`, `public/apple-touch-icon.png` and `assets/logo-512.png`. The in-app logo is `src/client/components/logo.tsx`; keep its drawing in step with the SVG.
+
 ## Configuration
 
 The game has no secrets. `.env.example` lists the optional variables `PORT` and `HOST`. The server reads them from the environment.
