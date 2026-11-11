@@ -17,6 +17,7 @@ export const vi = {
     off: "Tắt",
     home: "Về trang chủ",
     points: "điểm",
+    randomName: "Tên ngẫu nhiên",
   },
   connection: {
     waking: "Đang đánh thức máy chủ...",

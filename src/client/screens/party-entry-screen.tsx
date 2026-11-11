@@ -2,6 +2,7 @@ import { DoorOpen, Plus } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { NAME_MAX } from "../../shared/game-rules";
 import { GameButton } from "../components/game-button";
+import { RandomNameButton } from "../components/random-name-button";
 import { ScreenFrame } from "../components/screen-frame";
 import { TextInput } from "../components/text-input";
 import { readLastName, saveLastName } from "../lib/last-name";
@@ -69,6 +70,13 @@ export function PartyEntryScreen({ onBack, onCreate, onJoin }: Props) {
         autoComplete="nickname"
         enterKeyHint="done"
         onChange={(e) => setName(e.target.value)}
+      />
+      <RandomNameButton
+        disabled={busy !== null}
+        onPick={(n) => {
+          setName(n);
+          setNameError(null);
+        }}
       />
       <section className="flex flex-col gap-3 rounded-button bg-surface p-4 shadow-card">
         <p className="text-small text-text-muted">{vi.party.createHint}</p>

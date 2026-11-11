@@ -5,6 +5,7 @@ import type { GameParams } from "../../shared/protocol";
 import type { Song } from "../../shared/song";
 import { GameButton } from "../components/game-button";
 import { GameParamsPanel } from "../components/game-params-panel";
+import { RandomNameButton } from "../components/random-name-button";
 import { ScreenFrame } from "../components/screen-frame";
 import { TextInput } from "../components/text-input";
 import { readLastName, saveLastName } from "../lib/last-name";
@@ -50,6 +51,7 @@ export function SoloSetupScreen(props: Props) {
       }
     >
       <TextInput label={vi.solo.nameLabel} value={name} maxLength={NAME_MAX} autoComplete="nickname" onChange={(e) => setName(e.target.value)} />
+      <RandomNameButton disabled={props.starting} onPick={setName} />
       <GameParamsPanel
         params={props.params}
         onParams={props.onParams}
