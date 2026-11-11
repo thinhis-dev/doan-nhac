@@ -1,0 +1,7 @@
+node_modules/
+dist/
+public/songs.csv
+.env
+.env.*
+*.log
+coverage/
