@@ -1,5 +1,5 @@
 import { useEffect, useSyncExternalStore } from "react";
-import { parseSongsCsv } from "../../shared/csv";
+import { type CsvParseResult, mergeSongs, parseSongsCsv, serializeSongsCsv } from "../../shared/csv";
 import type { Song } from "../../shared/song";
 
 export const STORAGE_KEY = "library.v1";
@@ -54,6 +54,56 @@ export class LibraryStore {
     }
     this.update({ status: "ready", songs });
     this.persist(songs);
+  }
+
+  /** Applies a change, then saves it. Edits stay in memory when storage fails. */
+  private commit(songs: Song[]): boolean {
+    this.update({ songs });
+    return this.persist(songs);
+  }
+
+  has(trackId: number): boolean {
+    return this.snapshot.songs.some((s) => s.trackId === trackId);
+  }
+
+  add(song: Song): boolean {
+    if (this.has(song.trackId)) return this.snapshot.storageOk;
+    return this.commit([song, ...this.snapshot.songs]);
+  }
+
+  updateSong(song: Song): boolean {
+    return this.commit(this.snapshot.songs.map((s) => (s.trackId === song.trackId ? song : s)));
+  }
+
+  remove(trackId: number): boolean {
+    return this.commit(this.snapshot.songs.filter((s) => s.trackId !== trackId));
+  }
+
+  /** Parses a CSV file without changing the library. */
+  parseImport(text: string): CsvParseResult {
+    return parseSongsCsv(text);
+  }
+
+  /** "merge": by trackId, imported rows win. "replace": the file becomes the library. */
+  importSongs(songs: Song[], mode: "merge" | "replace"): boolean {
+    return this.commit(mode === "replace" ? songs : mergeSongs(this.snapshot.songs, songs, "replace"));
+  }
+
+  exportCsv(): string {
+    return serializeSongsCsv(this.snapshot.songs);
+  }
+
+  /** Drops all local edits and loads the default library again. */
+  async reset(): Promise<boolean> {
+    try {
+      this.storage?.removeItem(STORAGE_KEY);
+    } catch {
+      // Storage is blocked: the reset still applies in memory.
+    }
+    const songs = await this.fetchDefault();
+    if (!songs) return false;
+    this.commit(songs);
+    return true;
   }
 
   protected async fetchDefault(): Promise<Song[] | null> {
