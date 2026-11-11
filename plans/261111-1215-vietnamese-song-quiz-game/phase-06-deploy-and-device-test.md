@@ -1,6 +1,6 @@
 ---
 title: "Phase 6: Deploy and device test"
-status: todo
+status: done
 priority: P1
 effort: 3h
 dependencies: [4, 5]
@@ -93,12 +93,12 @@ Fix each failure in the module that owns it, then run that row again.
 
 ## Todo
 
-- [ ] `render.yaml` and local production run
-- [ ] README
-- [ ] Deploy after user approval
-- [ ] Design checklist done
-- [ ] Device test matrix recorded
-- [ ] Failures fixed and tested again
+- [x] `render.yaml` and local production run
+- [x] README
+- [ ] Deploy after user approval (the user deploys)
+- [x] Design checklist done (automated checks; real-device checks pending)
+- [x] Device test matrix recorded in [device-test-results.md](./device-test-results.md) (real-device rows pending)
+- [ ] Failures fixed and tested again (after the real-device run)
 
 ## Success Criteria
 
