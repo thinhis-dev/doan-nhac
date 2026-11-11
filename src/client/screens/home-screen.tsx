@@ -1,5 +1,6 @@
 import { Library, type LucideIcon, User, Users } from "lucide-react";
 import { useEffect, useRef } from "react";
+import { Logo } from "../components/logo";
 import { Spinner } from "../components/spinner";
 import { vi } from "../lib/strings-vi";
 
@@ -50,8 +51,9 @@ export function HomeScreen({ connected, onSolo, onParty, onLibrary }: Props) {
 
   return (
     <div className="flex min-h-dvh flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-      <main className="mx-auto flex w-full max-w-[520px] flex-1 animate-enter flex-col justify-center gap-6 px-4 py-8 md:px-6">
-        <div className="text-center">
+      <main className="mx-auto flex w-full max-w-[520px] flex-1 animate-enter flex-col justify-center gap-5 px-4 py-6 md:px-6">
+        <div className="flex flex-col items-center text-center">
+          <Logo size={72} className="mb-1" />
           <h1 ref={headingRef} tabIndex={-1} className="font-display text-display font-extrabold text-cta outline-none">
             {vi.app.title}
           </h1>
