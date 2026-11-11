@@ -1,6 +1,6 @@
 ---
 title: "Phase 4: Game screens, solo and party"
-status: todo
+status: done
 priority: P1
 effort: 7h
 dependencies: [2, 3]
@@ -14,11 +14,11 @@ Connect the client to the game server. Build each screen of the Solo and Party f
 
 ## Requirements
 
-- [ ] Solo flow: name is optional, set parameters, play, see the result, play again.
-- [ ] Party flow: create or join with a code and a required name, lobby, play, ranking, play again.
-- [ ] The Solo player and the Party host set the five game parameters.
-- [ ] The song source filter uses the library in the host browser.
-- [ ] The tab-focus rule works and its limit is visible to players.
+- [x] Solo flow: name is optional, set parameters, play, see the result, play again.
+- [x] Party flow: create or join with a code and a required name, lobby, play, ranking, play again.
+- [x] The Solo player and the Party host set the five game parameters.
+- [x] The song source filter uses the library in the host browser.
+- [x] The tab-focus rule works and its limit is visible to players.
 
 ## Files
 
@@ -125,14 +125,14 @@ Commit after each numbered step that leaves the tests green. Push to `origin mai
 
 ## Todo
 
-- [ ] Game store with reducer tests
-- [ ] Library load and song filter with tests
-- [ ] Party entry and lobby
-- [ ] Parameters panel and source picker
-- [ ] Question screen with reveal
-- [ ] Result screen and play again
-- [ ] Focus watch
-- [ ] Disconnect handling
+- [x] Game store with reducer tests
+- [x] Library load and song filter with tests
+- [x] Party entry and lobby
+- [x] Parameters panel and source picker
+- [x] Question screen with reveal
+- [x] Result screen and play again
+- [x] Focus watch
+- [x] Disconnect handling
 
 ## Success Criteria
 
