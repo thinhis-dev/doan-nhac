@@ -50,9 +50,14 @@ The repository has a `render.yaml` Blueprint for one Node web service.
 
 1. In Render, choose **New > Blueprint** and connect `https://github.com/thinhis-dev/doan-nhac`.
 2. Render reads `render.yaml`: build `npm ci && npm run build`, start `npm start`, health check `/healthz`, one instance.
+   No API key and no secret are needed. Render watches the repository through its GitHub app.
 3. After the deploy, open `https://<service>.onrender.com/healthz`. It returns `ok`.
 
 Rooms live in server memory, so the service must run exactly one instance. A deploy or a restart ends all running games. The free plan stops an idle service. The first visit after that can wait about one minute. The game shows "Đang đánh thức máy chủ..." during that wait.
+
+## CI and automatic deploys
+
+`.github/workflows/ci.yml` runs `npm ci`, `npm run typecheck`, `npm test` and `npm run build` on each push to `main` and on each pull request. `render.yaml` sets `autoDeployTrigger: checksPass`, so Render deploys a push to `main` only after these checks pass.
 
 ## Usage limit
 

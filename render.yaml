@@ -7,7 +7,8 @@ services:
     buildCommand: npm ci && npm run build
     startCommand: npm start
     healthCheckPath: /healthz
-    autoDeploy: true
+    # Deploy a push to main only after the GitHub CI checks pass.
+    autoDeployTrigger: checksPass
     numInstances: 1
     envVars:
       - key: NODE_VERSION
