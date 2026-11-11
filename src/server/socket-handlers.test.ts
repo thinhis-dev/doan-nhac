@@ -29,7 +29,7 @@ const sockets: ClientSocket[] = [];
 beforeAll(async () => {
   const { app } = await createApp({
     clientDir: "/nonexistent",
-    handlers: { timing: { countdownMs: 30, revealMs: 30 }, refresh: async (s) => s },
+    handlers: { timing: { countdownMs: 30, revealMs: 30 }, refresh: async (s) => s, graceMs: 150 },
   });
   await app.listen({ port: 0, host: "127.0.0.1" });
   url = `http://127.0.0.1:${(app.server.address() as AddressInfo).port}`;
@@ -71,7 +71,10 @@ describe("socket handlers", () => {
     const guest = await client();
     const created = await call<{ ok: true; code: string; playerId: string }>(host, "room:create", { name: "Chủ phòng", mode: "party" });
     expect(created.ok).toBe(true);
-    expect(await call(guest, "room:join", { code: created.code.toLowerCase(), name: "Khách" })).toEqual({ ok: true, playerId: guest.id });
+    const joined = await call<{ ok: true; playerId: string; token: string }>(guest, "room:join", { code: created.code.toLowerCase(), name: "Khách" });
+    expect(joined).toEqual({ ok: true, playerId: expect.any(String), token: expect.any(String) });
+    const hostId = created.playerId;
+    const guestId = joined.playerId;
 
     // The start stays locked until every player has sound.
     await call(host, "player:audio", { ready: true });
@@ -110,12 +113,12 @@ describe("socket handlers", () => {
     expect(questions.every((q) => !("correctIndex" in q))).toBe(true);
     expect(reveals).toHaveLength(4);
 
-    const hostDeltas = reveals.map((r) => r.results.find((x) => x.playerId === host.id)?.delta ?? NaN);
+    const hostDeltas = reveals.map((r) => r.results.find((x) => x.playerId === hostId)?.delta ?? NaN);
     expect(hostDeltas.every((d) => d > 500 && d <= 1000)).toBe(true);
     const expectedHost = hostDeltas.reduce((a, b) => a + b, 0);
     expect(result.ranking.map((p) => [p.id, p.score])).toEqual([
-      [host.id, expectedHost],
-      [guest.id, 0],
+      [hostId, expectedHost],
+      [guestId, 0],
     ]);
 
     // Back to the lobby with scores reset.
@@ -148,14 +151,72 @@ describe("socket handlers", () => {
     expect((await q).total).toBe(5);
   });
 
-  it("moves the host when the host disconnects", async () => {
+  it("holds the seat of a disconnected host, then moves the host when the grace period ends", async () => {
     const host = await client();
     const guest = await client();
     const { code } = await call<{ code: string }>(host, "room:create", { name: "H", mode: "party" });
-    await call(guest, "room:join", { code, name: "G" });
+    const { playerId: guestId } = await call<{ playerId: string }>(guest, "room:join", { code, name: "G" });
+    const offline = nextState(guest, (s) => s.players.some((p) => !p.connected));
     const moved = nextState(guest, (s) => s.players.length === 1);
     host.close();
-    expect((await moved).hostId).toBe(guest.id);
+    expect((await offline).players).toHaveLength(2);
+    expect((await moved).hostId).toBe(guestId);
+  });
+
+  it("lets a player rejoin a running game with the token and catch up", async () => {
+    const host = await client();
+    const guest = await client();
+    const created = await call<{ code: string; playerId: string }>(host, "room:create", { name: "H", mode: "party" });
+    const joined = await call<{ playerId: string; token: string }>(guest, "room:join", { code: created.code, name: "G" });
+    await call(host, "player:audio", { ready: true });
+    await call(guest, "player:audio", { ready: true });
+    const firstQuestion = new Promise<QuestionPayload>((r) => host.once("game:question", r));
+    const params = { ...DEFAULT_PARAMS, questionCount: 5 as const, questionSeconds: 5 as const };
+    expect(await call(host, "game:start", { params, pool: pool.slice(0, 4) })).toEqual({ ok: true });
+    const q = await firstQuestion;
+
+    const offline = nextState(host, (s) => s.players.some((p) => !p.connected));
+    guest.close();
+    await offline;
+
+    const back = await client();
+    const caughtUp = new Promise<QuestionPayload>((r) => back.once("game:question", r));
+    const online = nextState(host, (s) => s.players.length === 2 && s.players.every((p) => p.connected));
+    expect(await call(back, "room:resume", { token: joined.token })).toEqual({
+      ok: true,
+      playerId: joined.playerId,
+      code: created.code,
+      mode: "party",
+    });
+    expect((await caughtUp).index).toBe(q.index);
+    const state = await online;
+    // The page reports sound again after a rejoin.
+    expect(state.players.find((p) => p.id === joined.playerId)?.audioReady).toBe(false);
+
+    // The grace timer is cancelled: the player stays well past the grace period.
+    await new Promise((r) => setTimeout(r, 300));
+    expect(await call(back, "game:answer", { questionIndex: 99, choiceIndex: 0 })).toEqual({ ok: false, error: "BAD_PAYLOAD" });
+    expect(await call(back, "player:focus", { focused: true })).toEqual({ ok: true });
+  });
+
+  it("moves the seat to the newest socket and rejects an unknown token", async () => {
+    const host = await client();
+    const created = await call<{ code: string; playerId: string; token: string }>(host, "room:create", { name: "H", mode: "party" });
+    const second = await client();
+    const kicked = new Promise<string>((r) => host.once("disconnect", r));
+    expect(await call(second, "room:resume", { token: created.token })).toMatchObject({ ok: true, playerId: created.playerId });
+    expect(await kicked).toBe("io server disconnect");
+    // The kicked socket does not start the grace timer: the seat stays.
+    await new Promise((r) => setTimeout(r, 300));
+    expect(await call(second, "player:focus", { focused: true })).toEqual({ ok: true });
+    expect(await call(second, "room:resume", { token: "nope" })).toEqual({ ok: false, error: "ROOM_NOT_FOUND" });
+  });
+
+  it("drops the token on leave", async () => {
+    const host = await client();
+    const created = await call<{ token: string }>(host, "room:create", { name: "H", mode: "party" });
+    await call(host, "room:leave", {});
+    expect(await call(await client(), "room:resume", { token: created.token })).toEqual({ ok: false, error: "ROOM_NOT_FOUND" });
   });
 
   it("answers time pings with the server time", async () => {

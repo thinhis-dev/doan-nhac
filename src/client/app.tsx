@@ -5,6 +5,7 @@ import { AudioGate } from "./components/audio-gate";
 import { ConfirmDialog } from "./components/confirm-dialog";
 import { GameButton } from "./components/game-button";
 import { ScreenFrame } from "./components/screen-frame";
+import { Spinner } from "./components/spinner";
 import { ToastProvider } from "./components/toast";
 import { type AudioState, sessionPlayer } from "./lib/audio-player";
 import { browserFocusEnv, watchFocus } from "./lib/focus-watch";
@@ -12,6 +13,7 @@ import { audioReportNeeded, gameActive, gameReducer, initialGameState, isHost } 
 import { guardRoom } from "./lib/leave-guard";
 import { useLibrary } from "./lib/library-store";
 import { DEFAULT_SOURCE, filterSongs, poolIsPlayable, type SourceSelection, toPool } from "./lib/song-filter";
+import { clearSessionToken, readSessionToken, saveSessionToken } from "./lib/session-token";
 import { getSocket, request } from "./lib/socket";
 import { errorText, vi } from "./lib/strings-vi";
 import { syncClock } from "./lib/time-sync";
@@ -33,6 +35,8 @@ function Game() {
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [audio, setAudio] = useState<AudioState>("locked");
   const [lockedIndex, setLockedIndex] = useState<number | null>(null);
+  // Counts rejoins, so that the focus watch starts again on the new socket.
+  const [rejoins, setRejoins] = useState(0);
   const lib = useLibrary();
   const player = sessionPlayer();
   const host = isHost(state);
@@ -47,9 +51,27 @@ function Game() {
     const onConnect = () => {
       setConnected(true);
       void syncClock((clientTime) => request("time:ping", { clientTime }));
+      // Take the room seat back after a reconnect or a reload of this tab.
+      const token = readSessionToken();
+      if (!token) return;
+      void request("room:resume", { token }).then((res) => {
+        if (res.ok) {
+          dispatch({ type: "resumed", playerId: res.playerId, mode: res.mode });
+          setRejoins((n) => n + 1);
+        } else {
+          clearSessionToken();
+          dispatch({ type: "resume-failed" });
+        }
+      });
     };
-    const onDisconnect = () => {
+    const onDisconnect = (reason: string) => {
       setConnected(false);
+      // The server closes this socket when the same seat opens on another socket.
+      if (reason === "io server disconnect") {
+        clearSessionToken();
+        dispatch({ type: "resume-failed" });
+        return;
+      }
       dispatch({ type: "disconnected" });
     };
     socket.on("connect", onConnect);
@@ -91,11 +113,12 @@ function Game() {
     if (!inGameScreen) player.stop();
   }, [inGameScreen, player]);
 
-  // Focus rule: report focus changes while a game runs.
+  // Report focus changes while a game runs, and in a party room so that the lobby shows who is away.
+  const watchingFocus = active || (state.room?.mode === "party" && state.screen !== "lost");
   useEffect(() => {
-    if (!active) return;
+    if (!watchingFocus) return;
     return watchFocus((focused) => void request("player:focus", { focused }), browserFocusEnv());
-  }, [active]);
+  }, [watchingFocus, rejoins]);
 
   // The focus rule locks this player for the current question.
   const me = state.room?.players.find((p) => p.id === state.playerId);
@@ -126,6 +149,7 @@ function Game() {
   const leave = useCallback(() => {
     setLeaveOpen(false);
     player.stop();
+    clearSessionToken();
     void request("room:leave", {});
     dispatch({ type: "left" });
   }, [player]);
@@ -133,6 +157,7 @@ function Game() {
   const createParty = async (name: string) => {
     const res = await request("room:create", { name, mode: "party" });
     if (!res.ok) return res.error;
+    saveSessionToken(res.token);
     dispatch({ type: "joined", playerId: res.playerId, mode: "party" });
     return null;
   };
@@ -140,6 +165,7 @@ function Game() {
   const joinParty = async (code: string, name: string) => {
     const res = await request("room:join", { code, name });
     if (!res.ok) return res.error;
+    saveSessionToken(res.token);
     dispatch({ type: "joined", playerId: res.playerId, mode: "party" });
     return null;
   };
@@ -164,6 +190,7 @@ function Game() {
         setStartError(errorText(created.error));
         return;
       }
+      saveSessionToken(created.token);
       dispatch({ type: "joined", playerId: created.playerId, mode: "solo" });
     }
     const res = await request("game:start", { params, pool: toPool(matching) });
@@ -284,7 +311,7 @@ function Game() {
         <ScreenFrame
           title={vi.connection.lost}
           footer={
-            <GameButton variant="cta" full icon={Home} onClick={() => dispatch({ type: "left" })}>
+            <GameButton variant="cta" full icon={Home} onClick={leave}>
               {vi.common.home}
             </GameButton>
           }
@@ -301,6 +328,15 @@ function Game() {
   return (
     <>
       <div key={state.screen}>{screen}</div>
+      {state.reconnecting ? (
+        <div
+          className="fixed inset-x-0 top-0 z-50 flex items-center justify-center gap-2 bg-danger px-4 py-2 text-small font-semibold text-ink"
+          role="status"
+        >
+          <Spinner size={16} />
+          {vi.connection.reconnecting}
+        </div>
+      ) : null}
       <ConfirmDialog
         open={leaveOpen}
         title={vi.leave.title}

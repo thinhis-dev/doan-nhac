@@ -24,6 +24,8 @@ export type Player = {
   audioReady: boolean;
   focused: boolean;
   answered: boolean;
+  /** False while the player is offline and the server holds the seat for a rejoin. */
+  connected: boolean;
 };
 
 export type RoomMode = "solo" | "party";
@@ -91,12 +93,15 @@ export type GameOverPayload = { ranking: Player[] };
 
 export type CreateRoomPayload = { name: string; mode: RoomMode };
 export type JoinRoomPayload = { code: string; name: string };
+export type ResumePayload = { token: string };
 export type StartGamePayload = { params: GameParams; pool: PoolSong[] };
 export type AnswerPayload = { questionIndex: number; choiceIndex: number };
 
 export interface ClientToServerEvents {
-  "room:create": (payload: CreateRoomPayload, ack: (res: Ack<{ code: string; playerId: string }>) => void) => void;
-  "room:join": (payload: JoinRoomPayload, ack: (res: Ack<{ playerId: string }>) => void) => void;
+  "room:create": (payload: CreateRoomPayload, ack: (res: Ack<{ code: string; playerId: string; token: string }>) => void) => void;
+  "room:join": (payload: JoinRoomPayload, ack: (res: Ack<{ playerId: string; token: string }>) => void) => void;
+  /** Takes the seat of the player that owns `token` back, for example after a reconnect or a reload. */
+  "room:resume": (payload: ResumePayload, ack: (res: Ack<{ playerId: string; code: string; mode: RoomMode }>) => void) => void;
   "room:leave": (payload: Record<string, never>, ack: (res: Ack) => void) => void;
   "room:params": (payload: { params: GameParams }, ack: (res: Ack) => void) => void;
   "player:audio": (payload: { ready: boolean }, ack: (res: Ack) => void) => void;

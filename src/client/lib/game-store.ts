@@ -23,6 +23,8 @@ export type GameState = {
   over: GameOverPayload | null;
   myAnswer: number | null;
   correctCount: number;
+  /** The socket dropped inside a room and the page is trying to take its seat back. */
+  reconnecting: boolean;
 };
 
 export type GameAction =
@@ -35,7 +37,9 @@ export type GameAction =
   | { type: "over"; over: GameOverPayload }
   | { type: "answer"; choiceIndex: number }
   | { type: "left" }
-  | { type: "disconnected" };
+  | { type: "disconnected" }
+  | { type: "resumed"; playerId: string; mode: RoomMode }
+  | { type: "resume-failed" };
 
 export const initialGameState: GameState = {
   screen: "home",
@@ -48,6 +52,7 @@ export const initialGameState: GameState = {
   over: null,
   myAnswer: null,
   correctCount: 0,
+  reconnecting: false,
 };
 
 function screenForRoom(state: GameState, room: RoomState): Screen {
@@ -72,6 +77,7 @@ const roomReset = {
   over: null,
   myAnswer: null,
   correctCount: 0,
+  reconnecting: false,
 } satisfies Partial<GameState>;
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
@@ -102,6 +108,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case "question": {
+      // A rejoin sends the running question again. Keep the answer and the playing clip.
+      const same = state.question?.index === action.question.index && state.question.startsAt === action.question.startsAt;
+      if (same) return state;
       const fresh = action.question.index === 0;
       return {
         ...state,
@@ -132,7 +141,15 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return { ...state, ...roomReset, screen: "home", mode: null };
 
     case "disconnected":
-      return state.room ? { ...state, screen: "lost" } : state;
+      return state.room ? { ...state, reconnecting: true } : state;
+
+    case "resumed":
+      // The same page keeps its game. A reloaded page starts from the room state the server sends.
+      if (state.playerId === action.playerId) return { ...state, reconnecting: false };
+      return { ...state, ...roomReset, playerId: action.playerId, mode: action.mode };
+
+    case "resume-failed":
+      return state.room ? { ...state, reconnecting: false, screen: "lost" } : { ...state, reconnecting: false };
   }
 }
 

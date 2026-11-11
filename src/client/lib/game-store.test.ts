@@ -15,7 +15,7 @@ const room = (phase: RoomPhase, mode: "solo" | "party" = "party"): RoomState => 
   mode,
   phase,
   hostId: "me",
-  players: [{ id: "me", name: "Tôi", avatarId: 1, score: 0, audioReady: true, focused: true, answered: false }],
+  players: [{ id: "me", name: "Tôi", avatarId: 1, score: 0, audioReady: true, focused: true, answered: false, connected: true }],
   params: DEFAULT_PARAMS,
 });
 
@@ -110,18 +110,45 @@ describe("gameReducer", () => {
     expect(s.screen).toBe("solo-setup");
   });
 
-  it("shows the lost screen on a disconnect inside a room and resets on leave", () => {
+  it("keeps the screen while reconnecting, and shows lost when the seat is gone", () => {
     let s = run([
       { type: "joined", playerId: "me", mode: "party" },
       { type: "audio-confirmed" },
       { type: "room-state", room: room("lobby") },
       { type: "disconnected" },
     ]);
-    expect(s.screen).toBe("lost");
+    expect(s).toMatchObject({ screen: "lobby", reconnecting: true });
+    s = run([{ type: "resume-failed" }], s);
+    expect(s).toMatchObject({ screen: "lost", reconnecting: false });
     s = run([{ type: "room-state", room: room("playing") }], s);
     expect(s.screen).toBe("lost");
     s = run([{ type: "left" }], s);
     expect(s).toMatchObject({ screen: "home", room: null, playerId: null });
+  });
+
+  it("keeps the game and the answer after a rejoin on the same page", () => {
+    const q = question(0);
+    let s = run([
+      { type: "joined", playerId: "me", mode: "party" },
+      { type: "audio-confirmed" },
+      { type: "room-state", room: room("playing") },
+      { type: "question", question: q },
+      { type: "answer", choiceIndex: 2 },
+      { type: "disconnected" },
+      { type: "resumed", playerId: "me", mode: "party" },
+      { type: "question", question: { ...q } },
+    ]);
+    expect(s).toMatchObject({ screen: "question", reconnecting: false, myAnswer: 2 });
+    // The same question keeps its object, so the clip does not start again.
+    expect(s.question).toBe(q);
+  });
+
+  it("a reloaded page takes the seat from the server state", () => {
+    const s = run([
+      { type: "resumed", playerId: "me", mode: "party" },
+      { type: "room-state", room: room("lobby") },
+    ]);
+    expect(s).toMatchObject({ playerId: "me", mode: "party", screen: "gate" });
   });
 
   it("does not show lost outside a room", () => {

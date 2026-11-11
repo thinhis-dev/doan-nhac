@@ -49,6 +49,9 @@ export class GameEngine {
   private answers = new Map<string, AnswerRecord>();
   private locked = new Set<string>();
   private params: GameParams;
+  private lastQuestion: QuestionPayload | undefined;
+  private lastReveal: RevealPayload | undefined;
+  private lastOver: GameOverPayload | undefined;
 
   constructor(
     private readonly room: Room,
@@ -106,6 +109,30 @@ export class GameEngine {
     this.revealIfAllDone();
   }
 
+  /** Marks a player offline or back online. An offline player does not hold up an early reveal. */
+  setConnected(playerId: string, connected: boolean): void {
+    const player = this.findPlayer(playerId);
+    if (!player) return;
+    player.connected = connected;
+    this.events.state();
+    this.revealIfAllDone();
+  }
+
+  /** The payloads a rejoining player needs to catch up with the current phase. */
+  current(): { question?: QuestionPayload; reveal?: RevealPayload; over?: GameOverPayload } {
+    switch (this.room.phase) {
+      case "countdown":
+      case "playing":
+        return { question: this.lastQuestion };
+      case "reveal":
+        return { question: this.lastQuestion, reveal: this.lastReveal };
+      case "over":
+        return { over: this.lastOver };
+      case "lobby":
+        return {};
+    }
+  }
+
   /** Call after a player left the room. A remaining player set may now be done. */
   playerLeft(playerId: string): void {
     this.answers.delete(playerId);
@@ -140,7 +167,8 @@ export class GameEngine {
     this.endsAt = this.startsAt + this.params.questionSeconds * 1000;
     this.room.phase = "countdown";
     this.events.state();
-    this.events.question({
+    this.lastReveal = undefined;
+    this.lastQuestion = {
       index: this.index,
       total: this.questions.length,
       kind: q.kind,
@@ -149,7 +177,8 @@ export class GameEngine {
       clipOffsetSec: q.clipOffsetSec,
       startsAt: this.startsAt,
       endsAt: this.endsAt,
-    });
+    };
+    this.events.question(this.lastQuestion);
     this.schedule(() => this.beginPlaying(), this.startsAt);
   }
 
@@ -163,7 +192,9 @@ export class GameEngine {
 
   private revealIfAllDone(): void {
     if (this.room.phase !== "playing") return;
-    const done = this.room.players.every((p) => this.answers.has(p.id) || this.locked.has(p.id));
+    // Offline players are skipped, but a room with nobody online waits for the timer.
+    const online = this.room.players.filter((p) => p.connected);
+    const done = online.length > 0 && online.every((p) => this.answers.has(p.id) || this.locked.has(p.id));
     if (done) this.reveal();
   }
 
@@ -178,13 +209,14 @@ export class GameEngine {
       return { playerId: p.id, choiceIndex: a?.choiceIndex ?? null, delta, score: p.score };
     });
     this.events.state();
-    this.events.reveal({
+    this.lastReveal = {
       index: this.index,
       correctIndex: q.correctIndex,
       title: displayText(q.song.title),
       artist: displayText(q.song.artist),
       results,
-    });
+    };
+    this.events.reveal(this.lastReveal);
     this.schedule(() => this.nextQuestion(), this.clock.now() + this.timing.revealMs);
   }
 
@@ -193,7 +225,8 @@ export class GameEngine {
     this.room.phase = "over";
     for (const p of this.room.players) p.answered = false;
     const ranking = [...this.room.players].sort((a, b) => b.score - a.score).map((p) => ({ ...p }));
+    this.lastOver = { ranking };
     this.events.state();
-    this.events.over({ ranking });
+    this.events.over(this.lastOver);
   }
 }
