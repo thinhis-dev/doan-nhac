@@ -35,7 +35,7 @@ Create, all under `/home/bim-dev/projects/doan-nhac`:
 
 | Part | Choice |
 |---|---|
-| Runtime | Node 24, TypeScript strict mode |
+| Runtime | Node 24.22.1 or later in the 24.x line (October 2026 security release), pinned in `.nvmrc` and `engines`. TypeScript strict mode. |
 | Server | Fastify 5 with `@fastify/static`, Socket.IO 4, `zod` for payload validation |
 | Client | React 19, Vite, Tailwind CSS 4, `socket.io-client`, `lucide-react`, `@fontsource` fonts |
 | CSV | `papaparse` |
