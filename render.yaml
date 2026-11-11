@@ -1,0 +1,14 @@
+# Render Blueprint: one Node web service. Rooms live in memory, so keep exactly one instance.
+services:
+  - type: web
+    name: doan-nhac
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /healthz
+    autoDeploy: true
+    numInstances: 1
+    envVars:
+      - key: NODE_VERSION
+        value: 24.22.2

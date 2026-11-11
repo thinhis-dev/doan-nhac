@@ -5,3 +5,4 @@ public/songs.csv
 .env.*
 *.log
 coverage/
+!.env.example
