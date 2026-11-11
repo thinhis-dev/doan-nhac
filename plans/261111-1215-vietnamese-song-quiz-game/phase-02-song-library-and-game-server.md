@@ -1,6 +1,6 @@
 ---
 title: "Phase 2: Song library and game server"
-status: todo
+status: done
 priority: P1
 effort: 6h
 dependencies: [1]
@@ -14,11 +14,11 @@ Build the default song library of about 1000 songs. Build the server that runs r
 
 ## Requirements
 
-- [ ] A repeatable script fetches songs by artist from the iTunes Search API into `data/songs.csv`.
-- [ ] A second run of the script adds new songs and keeps all manual edits.
-- [ ] The server runs the full game loop for 1 to 5 players.
-- [ ] The server owns all timing and scoring.
-- [ ] Unit tests cover the rules. One integration test covers a full game.
+- [x] A repeatable script fetches songs by artist from the iTunes Search API into `data/songs.csv`.
+- [x] A second run of the script adds new songs and keeps all manual edits.
+- [x] The server runs the full game loop for 1 to 5 players.
+- [x] The server owns all timing and scoring.
+- [x] Unit tests cover the rules. One integration test covers a full game.
 
 ## Files
 
@@ -109,13 +109,13 @@ Commit after each numbered step that leaves the tests green. Push to `origin mai
 
 ## Todo
 
-- [ ] CSV module with tests
-- [ ] Artist list and fetch script, `data/songs.csv` generated
-- [ ] Batch lookup test done
-- [ ] Question builder with tests
-- [ ] Room store with tests
-- [ ] Game engine with tests
-- [ ] Socket handlers and integration test
+- [x] CSV module with tests
+- [x] Artist list and fetch script, `data/songs.csv` generated
+- [x] Batch lookup test done
+- [x] Question builder with tests
+- [x] Room store with tests
+- [x] Game engine with tests
+- [x] Socket handlers and integration test
 
 ## Success Criteria
 

@@ -1,6 +1,6 @@
 ---
 title: "Phase 3: Client shell and audio"
-status: todo
+status: done
 priority: P1
 effort: 5h
 dependencies: [1]
@@ -14,11 +14,11 @@ Build the visual foundation, the Vietnamese strings, the avatars, and the audio 
 
 ## Requirements
 
-- [ ] A playful, original game style with reusable components.
-- [ ] A mobile-first layout that also looks correct on a desktop screen.
-- [ ] All interface text comes from one Vietnamese strings module.
-- [ ] 12 built-in SVG avatars.
-- [ ] One audio module that handles unlock, preload, synchronized start and every failure case.
+- [x] A playful, original game style with reusable components.
+- [x] A mobile-first layout that also looks correct on a desktop screen.
+- [x] All interface text comes from one Vietnamese strings module.
+- [x] 12 built-in SVG avatars.
+- [x] One audio module that handles unlock, preload, synchronized start and every failure case.
 
 ## Files
 
@@ -94,12 +94,12 @@ Commit after each numbered step that leaves the tests green. Push to `origin mai
 
 ## Todo
 
-- [ ] Theme, fonts and base components
-- [ ] Vietnamese strings module
-- [ ] 12 SVG avatars
-- [ ] Socket client and time sync
-- [ ] Audio player with tests
-- [ ] Audio gate and home screen
+- [x] Theme, fonts and base components
+- [x] Vietnamese strings module
+- [x] 12 SVG avatars
+- [x] Socket client and time sync
+- [x] Audio player with tests
+- [x] Audio gate and home screen
 
 ## Success Criteria
 
