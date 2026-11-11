@@ -6,11 +6,11 @@ import { Avatar } from "./avatar";
 /** Party players during a question: avatar, score, answered mark and lost-focus mark. */
 export function PlayerStrip({ players, meId }: { players: Player[]; meId: string | null }) {
   return (
-    <ul className="flex gap-2 overflow-x-auto pb-1">
+    <ul className="flex gap-2">
       {players.map((p) => (
         <li
           key={p.id}
-          className={`flex min-w-0 flex-1 flex-col items-center rounded-chip bg-surface px-1 py-1.5 ${p.id === meId ? "ring-2 ring-outline" : ""}`}
+          className={`flex min-w-0 flex-1 flex-col items-center rounded-chip border-2 bg-surface px-1 py-1.5 ${p.id === meId ? "border-outline" : "border-transparent"}`}
         >
           <div className="relative">
             <Avatar id={p.avatarId} size={32} />
